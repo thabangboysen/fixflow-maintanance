@@ -115,8 +115,19 @@ export const verifyStudentNumber = createServerFn({ method: "POST" })
 
 /* ---------------- Student verification with emailed code ---------------- */
 
+// Until a custom email domain exists, the sign-in email carries a link (not a
+// code). Tapping it returns the student to /report already signed in.
+const returnOriginSchema = z
+  .string()
+  .trim()
+  .url()
+  .refine((value) => /^https?:$/.test(new URL(value).protocol), "Invalid return address.")
+  .transform((value) => new URL(value).origin);
+
 export const requestStudentOtp = createServerFn({ method: "POST" })
-  .inputValidator((data) => z.object({ studentNumber: reportingNumberSchema }).parse(data))
+  .inputValidator((data) =>
+    z.object({ studentNumber: reportingNumberSchema, origin: returnOriginSchema }).parse(data),
+  )
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -145,7 +156,7 @@ export const requestStudentOtp = createServerFn({ method: "POST" })
     const email = await resolveStudentEmail(supabaseAdmin, data.studentNumber);
     const { error } = await publicClient().auth.signInWithOtp({
       email,
-      options: { shouldCreateUser: true },
+      options: { shouldCreateUser: true, emailRedirectTo: `${data.origin}/report` },
     });
     if (error) throw new Error(error.message);
 
@@ -180,11 +191,73 @@ export const verifyStudentOtp = createServerFn({ method: "POST" })
       throw new Error("That code is not valid or has expired. Request a new one.");
     }
 
-    const userId = result.session.user.id;
+    await linkStudentAccount(supabaseAdmin, student, result.session.user.id, email);
+
+    return {
+      access_token: result.session.access_token,
+      refresh_token: result.session.refresh_token,
+      student: {
+        fullName: student.full_name,
+        studentNumber: student.student_number,
+        roomNumber: student.room_number,
+        block: student.block,
+      },
+    };
+  });
+
+// Called after the student taps the emailed sign-in link and lands back on
+// /report signed in. The proven email identifies the student.
+export const getLinkedStudent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const email = String(context.claims.email ?? "").trim().toLowerCase();
+    if (!email) throw new Error(NOT_FOUND);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: byEmail } = await supabaseAdmin
+      .from("students")
+      .select("student_number")
+      .ilike("email", email)
+      .maybeSingle();
+    const universityMatch = new RegExp(`^(\\d{9})@${STUDENT_EMAIL_DOMAIN.replace(/\./g, "\\.")}$`).exec(email);
+    const studentNumber = byEmail?.student_number ?? universityMatch?.[1];
+    if (!studentNumber) throw new Error(NOT_FOUND);
+
+    const { data: student } = await supabaseAdmin
+      .from("residence_students")
+      .select("id, full_name, student_number, room_number, block")
+      .eq("student_number", studentNumber)
+      .maybeSingle();
+    if (!student) throw new Error(NOT_FOUND);
+
+    await linkStudentAccount(supabaseAdmin, student, context.userId, email);
+
+    return {
+      fullName: student.full_name,
+      studentNumber: student.student_number,
+      roomNumber: student.room_number,
+      block: student.block,
+    };
+  });
+
+type ResidenceStudent = {
+  id: string;
+  full_name: string;
+  student_number: string;
+  room_number: string | null;
+  block: string | null;
+};
+
+// Link the logged-in user to their residence record and to the reporting
+// system's student record (used for room attachment and permissions).
+async function linkStudentAccount(
+  supabaseAdmin: Awaited<typeof import("@/integrations/supabase/client.server")>["supabaseAdmin"],
+  student: ResidenceStudent,
+  userId: string,
+  email: string,
+) {
     const parsed = parseRoomLabel(student.room_number, student.block);
 
-    // Link the logged-in user to their residence record and to the reporting
-    // system's student record (used for room attachment and permissions).
     await supabaseAdmin.from("residence_students").update({ user_id: userId }).eq("id", student.id);
 
     let roomId: string | null = null;
@@ -223,18 +296,7 @@ export const verifyStudentOtp = createServerFn({ method: "POST" })
         active: true,
       });
     }
-
-    return {
-      access_token: result.session.access_token,
-      refresh_token: result.session.refresh_token,
-      student: {
-        fullName: student.full_name,
-        studentNumber: student.student_number,
-        roomNumber: student.room_number,
-        block: student.block,
-      },
-    };
-  });
+}
 
 /* ---------------- Report submission ---------------- */
 
