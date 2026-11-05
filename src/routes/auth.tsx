@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { passwordSignIn } from "@/lib/auth.functions";
+import { requestLoginCode, verifyLoginCode } from "@/lib/auth.functions";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -15,7 +15,7 @@ export const Route = createFileRoute("/auth")({
       { title: "Staff log in · Corridor Hills Maintenance" },
       {
         name: "description",
-        content: "Log in to the Corridor Hills maintenance system with your registered email and password.",
+        content: "Log in to the Corridor Hills maintenance system with a 6-digit code sent to your registered email.",
       },
       { property: "og:title", content: "Staff log in · Corridor Hills Maintenance" },
       { property: "og:description", content: "Secure, role-based access for management, staff and administrators." },
@@ -28,16 +28,34 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
-  const signIn = useServerFn(passwordSignIn);
+  const requestCode = useServerFn(requestLoginCode);
+  const verifyCode = useServerFn(verifyLoginCode);
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [code, setCode] = useState("");
+  const [maskedEmail, setMaskedEmail] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
+  async function sendCode(e?: React.FormEvent) {
+    e?.preventDefault();
     setBusy(true);
     try {
-      const s = await signIn({ data: { email: email.trim(), password } });
+      const res = await requestCode({ data: { email: email.trim() } });
+      setMaskedEmail(res.maskedEmail);
+      setCode("");
+      toast.success("We emailed you a 6-digit code.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not send a code.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function submitCode(e: React.FormEvent) {
+    e.preventDefault();
+    if (code.length !== 6) return;
+    setBusy(true);
+    try {
+      const s = await verifyCode({ data: { email: email.trim(), code } });
       const { error } = await supabase.auth.setSession(s);
       if (error) throw error;
       navigate({ to: "/dashboard", replace: true });
@@ -83,36 +101,59 @@ function AuthPage() {
       </aside>
 
       <main className="flex items-center justify-center bg-background px-6 py-12">
-        <form onSubmit={submit} className="w-full max-w-lg space-y-6">
+        <form onSubmit={maskedEmail ? submitCode : sendCode} className="w-full max-w-lg space-y-6">
           <div>
             <h2 className="font-display text-3xl font-bold">Welcome back</h2>
-            <p className="mt-1 text-muted-foreground">Log in with your registered email and password.</p>
+            <p className="mt-1 text-muted-foreground">
+              {maskedEmail
+                ? "Enter the 6-digit code we emailed you."
+                : "Enter your registered email and we'll send you a 6-digit code."}
+            </p>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="email">Email address</Label>
-            <div className="relative">
-              <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input id="email" type="email" autoComplete="email" placeholder="you@example.com"
-                className="h-14 pl-11" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          {!maskedEmail ? (
+            <div className="space-y-2">
+              <Label htmlFor="email">Email address</Label>
+              <div className="relative">
+                <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input id="email" type="email" autoComplete="email" placeholder="you@example.com"
+                  className="h-14 pl-11" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              </div>
             </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <div className="relative">
-              <Lock className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input id="password" type="password" autoComplete="current-password" placeholder="••••••••"
-                className="h-14 pl-11" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          ) : (
+            <div className="space-y-2">
+              <p className="rounded-md bg-secondary p-3 text-sm">
+                Code sent to <strong className="break-all">{maskedEmail}</strong>
+              </p>
+              <Label htmlFor="code">6-digit code</Label>
+              <div className="relative">
+                <Lock className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input id="code" inputMode="numeric" autoComplete="one-time-code" maxLength={6} placeholder="123456"
+                  className="h-14 pl-11 font-mono text-lg tracking-[0.5em]" value={code}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))} autoFocus />
+              </div>
             </div>
-          </div>
-          <Button type="submit" className="h-14 w-full bg-accent text-base text-accent-foreground hover:bg-accent/90" disabled={busy}>
-            {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Log in
+          )}
+          <Button type="submit" className="h-14 w-full bg-accent text-base text-accent-foreground hover:bg-accent/90"
+            disabled={busy || (maskedEmail !== null && code.length !== 6)}>
+            {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} {maskedEmail ? "Log in" : "Send code"}
           </Button>
+          {maskedEmail && (
+            <div className="flex justify-between text-sm">
+              <button type="button" className="text-muted-foreground hover:text-foreground"
+                onClick={() => { setMaskedEmail(null); setCode(""); }} disabled={busy}>
+                Use a different email
+              </button>
+              <button type="button" className="font-medium text-accent" onClick={() => void sendCode()} disabled={busy}>
+                Resend code
+              </button>
+            </div>
+          )}
           <div className="space-y-2 text-center text-sm">
             <p className="text-muted-foreground">
               Are you a student?{" "}
               <Link to="/report" className="font-medium text-accent">Report a problem</Link>
             </p>
-            <p className="text-xs text-muted-foreground">Forgot your password? Ask the residence administrator.</p>
+            <p className="text-xs text-muted-foreground">Not receiving a code? Ask the residence administrator to check your email on file.</p>
           </div>
         </form>
       </main>

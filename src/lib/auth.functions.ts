@@ -78,9 +78,12 @@ export const verifyLoginCode = createServerFn({ method: "POST" })
         role: staff.role,
         staff_id: staff.id,
       });
-      await supabaseAdmin
-        .from("user_roles")
-        .upsert({ user_id: userId, role: staff.role }, { onConflict: "user_id,role" });
+      const roles = staff.role === "admin" ? (["admin", "management"] as const) : [staff.role];
+      for (const role of roles) {
+        await supabaseAdmin
+          .from("user_roles")
+          .upsert({ user_id: userId, role }, { onConflict: "user_id,role" });
+      }
     }
 
     return {
