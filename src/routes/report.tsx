@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ArrowLeft, ArrowRight, CheckCircle2, ChevronRight, CircleHelp, ClipboardList, Eye, Home, Info, Loader2, MapPin, Phone, Send, UserRound, Wrench, Zap } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, ChevronRight, CircleHelp, ClipboardList, Eye, Home, Info, Loader2, Mail, MapPin, Phone, Send, UserRound, Wrench, Zap } from "lucide-react";
 import { Wordmark } from "@/components/Wordmark";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { PROBLEM_CATEGORIES, type ProblemCategory } from "@/lib/categories";
-import { requestStudentOtp, setReportPhoto, submitStudentReport, verifyStudentOtp } from "@/lib/student.functions";
+import { getLinkedStudent, requestStudentOtp, setReportPhoto, submitStudentReport } from "@/lib/student.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { prepareTracking } from "@/lib/tracking-handoff";
 
@@ -55,12 +55,12 @@ type VerifiedStudent = {
 
 function ReportPage() {
   const requestOtp = useServerFn(requestStudentOtp);
-  const verifyOtp = useServerFn(verifyStudentOtp);
+  const linkedStudent = useServerFn(getLinkedStudent);
   const submit = useServerFn(submitStudentReport);
   const attachPhoto = useServerFn(setReportPhoto);
   const [maskedEmail, setMaskedEmail] = useState<string | null>(null);
-  const [code, setCode] = useState("");
   const [cooldown, setCooldown] = useState(0);
+  const [restoring, setRestoring] = useState(true);
   const [photo, setPhoto] = useState<File | null>(null);
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -80,12 +80,11 @@ function ReportPage() {
   const errorText = (e: unknown) =>
     e instanceof Error ? e.message : "Something went wrong. Please try again.";
 
-  async function sendCode() {
+  async function sendLink() {
     setBusy(true);
     try {
-      const result = await requestOtp({ data: { studentNumber: studentNumber.trim() } });
+      const result = await requestOtp({ data: { studentNumber: studentNumber.trim(), origin: window.location.origin } });
       setMaskedEmail(result.maskedEmail);
-      setCode("");
       setCooldown(60);
     } catch (e) {
       toast.error(errorText(e));
@@ -94,28 +93,54 @@ function ReportPage() {
     }
   }
 
-  async function checkCode() {
-    setBusy(true);
-    try {
-      const result = await verifyOtp({ data: { studentNumber: studentNumber.trim(), code: code.trim() } });
-      await supabase.auth.setSession({ access_token: result.access_token, refresh_token: result.refresh_token });
-      const label = result.student.roomNumber;
-      setStudent({
-        fullName: result.student.fullName,
-        studentNumber: result.student.studentNumber,
-        residence: "Corridor Hill",
-        block: result.student.block,
-        unit: null,
-        room: null,
-        roomLabel: label,
-      });
-      if (!label) toast.error("Your room has not been allocated yet. Please contact Corridor Hills Management.");
-    } catch (e) {
-      toast.error(errorText(e));
-    } finally {
-      setBusy(false);
+  // After the student taps the emailed link they land here signed in;
+  // look up their residence record and skip straight to step 2.
+  useEffect(() => {
+    let cancelled = false;
+    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    const linkError = hash.get("error_code") || hash.get("error");
+    const cameFromLink = hash.has("access_token") || Boolean(linkError);
+    if (linkError) {
+      toast.error("That sign-in link has expired or was already used. Please request a new one.");
+      window.history.replaceState(null, "", window.location.pathname);
     }
-  }
+
+    async function restore(showErrors: boolean) {
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) return;
+      try {
+        const result = await linkedStudent();
+        if (cancelled) return;
+        setStudent({
+          fullName: result.fullName,
+          studentNumber: result.studentNumber,
+          residence: "Corridor Hill",
+          block: result.block,
+          unit: null,
+          room: null,
+          roomLabel: result.roomNumber,
+        });
+        setStudentNumber(result.studentNumber);
+        if (!result.roomNumber) toast.error("Your room has not been allocated yet. Please contact Corridor Hills Management.");
+      } catch (e) {
+        if (showErrors && !cancelled) toast.error(errorText(e));
+      }
+    }
+
+    void restore(cameFromLink && !linkError).finally(() => {
+      if (!cancelled) setRestoring(false);
+    });
+
+    // If the link was opened in another tab, this tab picks up the sign-in too.
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN") void restore(false);
+    });
+    return () => {
+      cancelled = true;
+      sub.subscription.unsubscribe();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function submitReport() {
     if (!student) return;
@@ -212,27 +237,28 @@ function ReportPage() {
                   <Button asChild className="h-11 w-full"><Link to="/track" onClick={() => prepareTracking(student?.studentNumber, window.sessionStorage)}>Track this report<ArrowRight /></Link></Button>
                   <Button asChild variant="ghost" className="w-full"><Link to="/">Back to home</Link></Button>
                 </div>
+              ) : !student && restoring ? (
+                <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />Checking your sign-in…</div>
               ) : !student && maskedEmail ? (
-                <form onSubmit={(e) => { e.preventDefault(); if (!busy && code.length === 6) void checkCode(); }} className="space-y-5">
-                  <p className="rounded-md bg-secondary p-3 text-sm">We sent a code to <strong className="break-all">{maskedEmail}</strong></p>
-                  <div className="space-y-2">
-                    <Label htmlFor="otpCode" className="text-xs font-semibold">6-digit code</Label>
-                    <Input id="otpCode" inputMode="numeric" autoComplete="one-time-code" maxLength={6} placeholder="123456" className="h-11 text-center font-mono text-lg tracking-[0.5em]" value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))} />
-                    <p className="text-[10px] text-muted-foreground">The code expires after 10 minutes.</p>
+                <div className="space-y-5">
+                  <div className="space-y-2 rounded-md bg-secondary p-4 text-sm leading-6">
+                    <p className="flex items-center gap-2 font-semibold"><Mail className="h-4 w-4 text-accent" />Check your email</p>
+                    <p>We sent a sign-in link to <strong className="break-all">{maskedEmail}</strong>.</p>
+                    <p className="text-muted-foreground">Open the email and tap the link. You'll come straight back here, ready to describe your problem.</p>
                   </div>
-                  <Button type="submit" className="h-11 w-full" disabled={busy || code.length !== 6}>{busy ? <Loader2 className="animate-spin" /> : null}Verify code<ArrowRight /></Button>
-                  <Button type="button" variant="outline" className="w-full" disabled={busy || cooldown > 0} onClick={() => void sendCode()}>{cooldown > 0 ? `Resend code in ${cooldown}s` : "Resend code"}</Button>
-                  <Button type="button" variant="ghost" className="w-full text-muted-foreground" onClick={() => { setMaskedEmail(null); setCode(""); }}><ArrowLeft />Back</Button>
-                </form>
+                  <p className="text-[10px] text-muted-foreground">Can't find it? Check your spam folder. The link can only be used once.</p>
+                  <Button type="button" variant="outline" className="w-full" disabled={busy || cooldown > 0} onClick={() => void sendLink()}>{busy ? <Loader2 className="animate-spin" /> : null}{cooldown > 0 ? `Resend link in ${cooldown}s` : "Resend link"}</Button>
+                  <Button type="button" variant="ghost" className="w-full text-muted-foreground" onClick={() => setMaskedEmail(null)}><ArrowLeft />Back</Button>
+                </div>
               ) : !student ? (
-                <form onSubmit={(e) => { e.preventDefault(); if (!busy && /^\d{9}$/.test(studentNumber.trim())) void sendCode(); }} className="space-y-5">
+                <form onSubmit={(e) => { e.preventDefault(); if (!busy && /^\d{9}$/.test(studentNumber.trim())) void sendLink(); }} className="space-y-5">
                   <div className="space-y-2">
                     <Label htmlFor="studentNumber" className="text-xs font-semibold">Student number</Label>
                     <Input id="studentNumber" inputMode="numeric" autoComplete="off" maxLength={9} placeholder="e.g. 202412345" className="h-11" value={studentNumber} onChange={(e) => setStudentNumber(e.target.value.replace(/\D/g, ""))} />
-                    <p className="flex items-start gap-2 pt-1 text-[10px] leading-5 text-muted-foreground"><Info className="mt-0.5 h-4 w-4 shrink-0" />We'll email a 6-digit code to your student email.</p>
+                    <p className="flex items-start gap-2 pt-1 text-[10px] leading-5 text-muted-foreground"><Info className="mt-0.5 h-4 w-4 shrink-0" />We'll email a sign-in link to the email on your student record.</p>
                   </div>
                   <Button type="submit" className="h-11 w-full" disabled={busy || !/^\d{9}$/.test(studentNumber.trim())}>
-                    {busy ? <Loader2 className="animate-spin" /> : null}Send code<ArrowRight />
+                    {busy ? <Loader2 className="animate-spin" /> : null}Send sign-in link<ArrowRight />
                   </Button>
                   <Button asChild variant="ghost" className="w-full text-muted-foreground"><Link to="/"><ArrowLeft />Back</Link></Button>
                 </form>
