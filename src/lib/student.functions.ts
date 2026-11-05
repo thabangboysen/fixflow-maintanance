@@ -296,18 +296,7 @@ async function linkStudentAccount(
         active: true,
       });
     }
-
-    return {
-      access_token: result.session.access_token,
-      refresh_token: result.session.refresh_token,
-      student: {
-        fullName: student.full_name,
-        studentNumber: student.student_number,
-        roomNumber: student.room_number,
-        block: student.block,
-      },
-    };
-  });
+}
 
 /* ---------------- Report submission ---------------- */
 
