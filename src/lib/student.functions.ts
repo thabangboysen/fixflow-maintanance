@@ -44,10 +44,24 @@ function studentEmail(studentNumber: string) {
   return `${studentNumber}@${STUDENT_EMAIL_DOMAIN}`;
 }
 
-// e.g. 240371952 -> 2024****5
-function maskStudentEmail(studentNumber: string) {
-  if (studentNumber.length <= 5) return `${studentNumber[0] ?? ""}****`;
-  return `${studentNumber.slice(0, 4)}${"*".repeat(studentNumber.length - 5)}${studentNumber.slice(-1)}@${STUDENT_EMAIL_DOMAIN}`;
+// The code goes to the email on the student's directory record, falling back
+// to the university address derived from the student number.
+async function resolveStudentEmail(
+  supabaseAdmin: Awaited<typeof import("@/integrations/supabase/client.server")>["supabaseAdmin"],
+  studentNumber: string,
+) {
+  const { data } = await supabaseAdmin
+    .from("students")
+    .select("email")
+    .eq("student_number", studentNumber)
+    .maybeSingle();
+  return data?.email?.trim() || studentEmail(studentNumber);
+}
+
+// e.g. tswaneuniversity73@gmail.com -> ts***************@gmail.com
+function maskEmail(email: string) {
+  const [name = "", domain = ""] = email.split("@");
+  return `${name.slice(0, 2)}${"*".repeat(Math.max(name.length - 2, 2))}@${domain}`;
 }
 
 async function findStudent(studentNumber: string) {
@@ -128,14 +142,15 @@ export const requestStudentOtp = createServerFn({ method: "POST" })
 
     await supabaseAdmin.from("student_otp_requests").insert({ student_number: data.studentNumber });
 
+    const email = await resolveStudentEmail(supabaseAdmin, data.studentNumber);
     const { error } = await publicClient().auth.signInWithOtp({
-      email: studentEmail(data.studentNumber),
+      email,
       options: { shouldCreateUser: true },
     });
     if (error) throw new Error(error.message);
 
     return {
-      maskedEmail: maskStudentEmail(data.studentNumber),
+      maskedEmail: maskEmail(email),
       fullName: student.full_name,
     };
   });
@@ -155,7 +170,7 @@ export const verifyStudentOtp = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!student) throw new Error(NOT_FOUND);
 
-    const email = studentEmail(data.studentNumber);
+    const email = await resolveStudentEmail(supabaseAdmin, data.studentNumber);
     const { data: result, error } = await publicClient().auth.verifyOtp({
       email,
       token: data.code,
@@ -415,16 +430,18 @@ export const importResidenceStudents = createServerFn({ method: "POST" })
       const studentValues = {
         student_number: row.studentNumber,
         full_name: row.fullName,
-        email: studentEmail(row.studentNumber),
         residence: "Corridor Hill",
         room_id: roomId,
         active: true,
       };
       const studentId = studentsByNumber.get(row.studentNumber);
       if (studentId) {
+        // Keep the email already on file; codes are sent there.
         await supabaseAdmin.from("students").update(studentValues).eq("id", studentId);
       } else {
-        await supabaseAdmin.from("students").insert(studentValues);
+        await supabaseAdmin
+          .from("students")
+          .insert({ ...studentValues, email: studentEmail(row.studentNumber) });
       }
     }
 
