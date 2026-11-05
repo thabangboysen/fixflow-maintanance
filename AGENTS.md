@@ -28,3 +28,7 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+- Keep the public reporting page's visual workspace separate from its existing student verification and submission functions, so presentation changes do not alter access rules.
+- Use a consumed, tab-local tracking handoff only when navigating from reporting; never place student numbers in URLs or reuse a handoff for later landing-page visits.
+- Students and staff sign in with emailed one-time codes; accounts link to their directory row (students / staff_accounts) by email, so imported directory rows need no password migration.
