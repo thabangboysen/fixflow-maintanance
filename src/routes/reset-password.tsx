@@ -120,7 +120,7 @@ function ResetPasswordPage() {
                   <Link to="/admin">Admin</Link>
                 </Button>
                 <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90">
-                  <Link to="/management">Management</Link>
+                  <Link to="/management" search={{ view: "dashboard" }}>Management</Link>
                 </Button>
                 <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90">
                   <Link to="/staff">Worker</Link>
