@@ -13,6 +13,13 @@ export const staffPasswordSetupSchema = z.object({
   }, "Invalid return address."),
 });
 
+export const newStaffPasswordSchema = z
+  .object({
+    password: z.string().min(8, "Use at least 8 characters.").max(72, "Use 72 characters or fewer."),
+    confirm: z.string(),
+  })
+  .refine((v) => v.password === v.confirm, { message: "The passwords do not match.", path: ["confirm"] });
+
 export function staffRoles(role: "admin" | "management" | "staff") {
   return role === "admin" ? (["admin", "management"] as const) : [role];
 }
