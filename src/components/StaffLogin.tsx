@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useRouter } from "@tanstack/react-router";
+import { useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { ClipboardList, Loader2, Lock, Mail, ShieldCheck, Wrench } from "lucide-react";
@@ -62,26 +62,25 @@ export function StaffLogin({ portal }: { portal: Portal }) {
     }
   }
 
-  const shadow = "[text-shadow:0_2px_12px_rgb(0_0_0/0.55)]";
-
   return (
-    <div className="relative min-h-screen overflow-hidden text-primary-foreground">
+    <div className="relative flex min-h-screen flex-col overflow-hidden text-primary-foreground">
       <img src={cfg.bg} alt="" className="absolute inset-0 h-full w-full object-cover" />
-      <div className="pointer-events-none absolute inset-y-0 left-0 w-2/3 bg-gradient-to-r from-foreground/35 to-transparent" />
+      <div className="pointer-events-none absolute inset-y-0 left-0 w-full bg-gradient-to-r from-foreground/30 via-foreground/10 to-transparent lg:w-2/3" />
 
-      <div className="relative z-10 mx-auto grid min-h-screen max-w-7xl items-center gap-10 px-6 py-10 lg:grid-cols-2 lg:px-14">
-        <div className={`flex flex-col items-center gap-8 lg:h-full lg:items-start lg:justify-between lg:py-4 ${shadow}`}>
-          <Wordmark large subtitle="Corridor Hill Residence" />
-          <div className="hidden lg:block">
-            <h1 className="font-display text-4xl font-bold leading-tight">Smart maintenance<br />reporting system</h1>
-            <p className="mt-3 text-lg opacity-90">Report it. Track it. Fixed.</p>
-          </div>
-          <p className="hidden text-sm opacity-80 lg:block">© 2026 FixFlow</p>
-        </div>
+      <header className="relative z-10 px-6 pt-6 drop-shadow-md lg:absolute lg:left-8 lg:top-8 lg:px-0 lg:pt-0">
+        <Wordmark large subtitle="Corridor Hill Residence" />
+      </header>
 
+      <main className="relative z-10 mx-auto grid w-full max-w-7xl flex-1 items-center gap-8 px-6 py-8 lg:grid-cols-2 lg:gap-10 lg:px-14 lg:py-24">
+        <section className="hidden max-w-xl drop-shadow-md lg:block" aria-label="FixFlow maintenance reporting">
+          <h1 className="font-display text-4xl font-bold leading-tight text-primary-foreground xl:text-5xl">
+            Smart maintenance<br />reporting system
+          </h1>
+          <p className="mt-4 text-lg text-primary-foreground/80">Report it. Track it. Fixed.</p>
+        </section>
         <form
           onSubmit={maskedEmail ? submitCode : sendCode}
-          className="mx-auto w-full max-w-md space-y-6 rounded-3xl border border-primary-foreground/20 bg-foreground/45 p-8 shadow-2xl backdrop-blur-xl sm:p-10"
+          className="mx-auto w-full max-w-md space-y-6 rounded-2xl border border-primary-foreground/20 bg-foreground/45 p-7 shadow-2xl backdrop-blur-xl sm:p-9"
         >
           <span className="inline-flex items-center gap-2 rounded-full bg-accent/20 px-4 py-1.5 text-sm font-semibold text-accent">
             <cfg.Icon className="h-4 w-4" /> {cfg.badge}
@@ -125,12 +124,18 @@ export function StaffLogin({ portal }: { portal: Portal }) {
               <button type="button" className="font-medium text-accent" onClick={() => void sendCode()} disabled={busy}>Resend code</button>
             </div>
           )}
-          <div className="space-y-2 text-center text-sm">
-            <Link to="/" className="font-medium text-accent">← Back to home</Link>
-            <p className="text-xs opacity-70">Not receiving a code? Ask the residence administrator to check your email on file.</p>
+          <div className="mt-8 border-t border-primary-foreground/15 pt-5 text-center text-sm">
+            <p className="text-xs leading-relaxed text-primary-foreground/75">Not receiving a code? Ask the residence administrator to check your email on file.</p>
           </div>
         </form>
-      </div>
+      </main>
+
+      <footer className="relative z-10 mt-auto bg-gradient-to-r from-foreground/35 via-foreground/15 to-transparent px-6 py-4 text-xs text-primary-foreground/75 sm:px-8 lg:px-10">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 text-center sm:flex-row sm:text-left">
+          <span>© 2026 FixFlow · Corridor Hill Residence</span>
+          <span>Smart maintenance reporting</span>
+        </div>
+      </footer>
     </div>
   );
 }
