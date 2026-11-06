@@ -135,20 +135,29 @@ export const passwordSignIn = createServerFn({ method: "POST" })
       .ilike("email", email)
       .eq("active", true)
       .maybeSingle();
-    if (staff) {
-      const { error: linkError } = await supabaseAdmin.from("staff_accounts").update({ user_id: userId }).eq("id", staff.id);
-      if (linkError) throw new Error("Could not link your staff account. Please try again.");
-      const { error: profileError } = await supabaseAdmin.from("profiles").upsert({
-        id: userId, email, full_name: staff.full_name, role: staff.role, staff_id: staff.id,
-      });
-      if (profileError) throw new Error("Could not load your staff profile. Please try again.");
-      if (staff.role === "student") throw new Error("This is not a staff account.");
-      const roles = staffRoles(staff.role);
-      for (const role of roles) {
-        const { error: roleError } = await supabaseAdmin.from("user_roles").upsert({ user_id: userId, role }, { onConflict: "user_id,role" });
-        if (roleError) throw new Error("Could not load your staff permissions. Please try again.");
-      }
-    } else throw new Error("This staff account is not active.");
+    if (!staff) throw new Error("This staff account is not active.");
+    if (staff.role === "student") throw new Error("This is not a staff account.");
+
+    const { error: linkError } = await supabaseAdmin.from("staff_accounts").update({ user_id: userId }).eq("id", staff.id);
+    if (linkError) throw new Error("Could not link your staff account. Please try again.");
+    const { error: profileError } = await supabaseAdmin.from("profiles").upsert({
+      id: userId, email, full_name: staff.full_name, role: staff.role, staff_id: staff.id,
+    });
+    if (profileError) throw new Error("Could not load your staff profile. Please try again.");
+
+    // Permissions always mirror the protected staff directory: grant the
+    // directory roles and revoke any stale ones left from an earlier role.
+    const roles = staffRoles(staff.role);
+    for (const role of roles) {
+      const { error: roleError } = await supabaseAdmin.from("user_roles").upsert({ user_id: userId, role }, { onConflict: "user_id,role" });
+      if (roleError) throw new Error("Could not load your staff permissions. Please try again.");
+    }
+    const { error: revokeError } = await supabaseAdmin
+      .from("user_roles")
+      .delete()
+      .eq("user_id", userId)
+      .not("role", "in", `(${roles.join(",")})`);
+    if (revokeError) throw new Error("Could not load your staff permissions. Please try again.");
     return { access_token: result.session.access_token, refresh_token: result.session.refresh_token };
   });
 

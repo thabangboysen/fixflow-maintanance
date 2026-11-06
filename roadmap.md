@@ -4,4 +4,4 @@
 - [x] Copy pages, styling, photos and server logic
 - [ ] Import existing records (students, staff, reports) — deferred by the user
 - [ ] Re-upload old report photos — waiting on files (optional)
-- [ ] Replace staff code sign-in with email/password and a secure password setup/reset flow
+- [x] Replace staff code sign-in with email/password and a secure password setup/reset flow

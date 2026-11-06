@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ReportRouteImport } from './routes/report'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as TrackRouteImport } from './routes/track'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
@@ -36,6 +37,11 @@ const AuthRoute = AuthRouteImport.update({
 const ReportRoute = ReportRouteImport.update({
   id: '/report',
   path: '/report',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TrackRoute = TrackRouteImport.update({
@@ -68,6 +74,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/report': typeof ReportRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/track': typeof TrackRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -78,6 +85,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/report': typeof ReportRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/track': typeof TrackRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -90,6 +98,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/report': typeof ReportRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/track': typeof TrackRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
@@ -102,6 +111,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/report'
+    | '/reset-password'
     | '/track'
     | '/admin'
     | '/dashboard'
@@ -112,6 +122,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/report'
+    | '/reset-password'
     | '/track'
     | '/admin'
     | '/dashboard'
@@ -123,6 +134,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/report'
+    | '/reset-password'
     | '/track'
     | '/_authenticated/admin'
     | '/_authenticated/dashboard'
@@ -135,6 +147,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ReportRoute: typeof ReportRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   TrackRoute: typeof TrackRoute
 }
 
@@ -166,6 +179,13 @@ declare module '@tanstack/react-router' {
       path: '/report'
       fullPath: '/report'
       preLoaderRoute: typeof ReportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/track': {
@@ -228,6 +248,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ReportRoute: ReportRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   TrackRoute: TrackRoute,
 }
 export const routeTree = rootRouteImport
