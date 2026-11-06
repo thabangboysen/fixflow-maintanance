@@ -2,11 +2,12 @@ import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
+import { staffPasswordSchema, staffPasswordSetupSchema, staffRoles } from "./staff-auth";
 
 function publicClient() {
   return createClient<Database>(
-    process.env["SUPABASE_URL"]!,
-    process.env["SUPABASE_PUBLISHABLE_KEY"]!,
+    process.env["SUPABASE_URL"] ?? "",
+    process.env["SUPABASE_PUBLISHABLE_KEY"] ?? "",
     { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
   );
 }
@@ -115,30 +116,15 @@ export const setupFirstAdmin = createServerFn({ method: "POST" })
   });
 
 export const passwordSignIn = createServerFn({ method: "POST" })
-  .inputValidator((data) =>
-    emailSchema.extend({ password: z.string().min(6).max(100) }).parse(data),
-  )
+  .inputValidator((data) => staffPasswordSchema.parse(data))
   .handler(async ({ data }) => {
     const email = await resolveStaffEmail(data.email);
     const client = publicClient();
-    let { data: result, error } = await client.auth.signInWithPassword({
+    const { data: result, error } = await client.auth.signInWithPassword({
       email,
       password: data.password,
     });
 
-    const ownerEmail = process.env["OWNER_EMAIL"]?.toLowerCase();
-    const ownerPassword = process.env["OWNER_PASSWORD"];
-    if (
-      (error || !result.session) &&
-      ownerEmail &&
-      email.toLowerCase() === ownerEmail &&
-      data.password === ownerPassword
-    ) {
-      // First sign-in for the owner account: create it with the configured password.
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      await supabaseAdmin.auth.admin.createUser({ email, password: data.password, email_confirm: true });
-      ({ data: result, error } = await client.auth.signInWithPassword({ email, password: data.password }));
-    }
     if (error || !result.session) throw new Error("Incorrect email or password.");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -150,14 +136,36 @@ export const passwordSignIn = createServerFn({ method: "POST" })
       .eq("active", true)
       .maybeSingle();
     if (staff) {
-      await supabaseAdmin.from("staff_accounts").update({ user_id: userId }).eq("id", staff.id);
-      await supabaseAdmin.from("profiles").upsert({
+      const { error: linkError } = await supabaseAdmin.from("staff_accounts").update({ user_id: userId }).eq("id", staff.id);
+      if (linkError) throw new Error("Could not link your staff account. Please try again.");
+      const { error: profileError } = await supabaseAdmin.from("profiles").upsert({
         id: userId, email, full_name: staff.full_name, role: staff.role, staff_id: staff.id,
       });
-      const roles = staff.role === "admin" ? ["admin", "management"] as const : [staff.role];
+      if (profileError) throw new Error("Could not load your staff profile. Please try again.");
+      if (staff.role === "student") throw new Error("This is not a staff account.");
+      const roles = staffRoles(staff.role);
       for (const role of roles) {
-        await supabaseAdmin.from("user_roles").upsert({ user_id: userId, role }, { onConflict: "user_id,role" });
+        const { error: roleError } = await supabaseAdmin.from("user_roles").upsert({ user_id: userId, role }, { onConflict: "user_id,role" });
+        if (roleError) throw new Error("Could not load your staff permissions. Please try again.");
       }
-    }
+    } else throw new Error("This staff account is not active.");
     return { access_token: result.session.access_token, refresh_token: result.session.refresh_token };
+  });
+
+export const requestStaffPasswordLink = createServerFn({ method: "POST" })
+  .inputValidator((data) => staffPasswordSetupSchema.parse(data))
+  .handler(async ({ data }) => {
+    const email = await resolveStaffEmail(data.email);
+    // Only registered directory emails can be provisioned. No roles or session
+    // are issued here: the recovery email verifies mailbox ownership first.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error: createError } = await supabaseAdmin.auth.admin.createUser({ email, email_confirm: false });
+    if (createError && !["email_exists", "user_already_exists"].includes(createError.code ?? "")) {
+      throw new Error("Could not prepare your staff account. Please try again.");
+    }
+    const { error } = await publicClient().auth.resetPasswordForEmail(email, {
+      redirectTo: `${data.origin}/reset-password`,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });
