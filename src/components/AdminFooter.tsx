@@ -23,7 +23,7 @@ export function AdminFooter() {
         <div>
           <p className="text-xs font-semibold uppercase tracking-wider opacity-70">Quick links</p>
           <ul className="mt-3 space-y-2 text-sm">
-            <li><Link to="/management" className="opacity-85 hover:opacity-100 hover:underline">Management dashboard</Link></li>
+            <li><Link to="/management" search={{ view: "reports" }} className="opacity-85 hover:opacity-100 hover:underline">Management dashboard</Link></li>
             <li><Link to="/report" className="opacity-85 hover:opacity-100 hover:underline">Report a problem</Link></li>
             <li><Link to="/track" className="opacity-85 hover:opacity-100 hover:underline">Track a report</Link></li>
             <li><Link to="/" className="opacity-85 hover:opacity-100 hover:underline">Student portal</Link></li>
