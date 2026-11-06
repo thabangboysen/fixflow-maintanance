@@ -31,4 +31,4 @@ use the editor.
 
 - Keep the public reporting page's visual workspace separate from its existing student verification and submission functions, so presentation changes do not alter access rules.
 - Use a consumed, tab-local tracking handoff only when navigating from reporting; never place student numbers in URLs or reuse a handoff for later landing-page visits.
-- Students and staff sign in with emailed one-time codes; accounts link to their directory row (students / staff_accounts) by email, so imported directory rows need no password migration.
+- Link authenticated accounts to their directory row by verified email and derive staff permissions from the protected directory; changing sign-in methods must preserve existing account links and role restrictions.
