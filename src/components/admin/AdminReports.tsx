@@ -153,7 +153,7 @@ export function AdminCharts({ reports }: { reports: AdminReport[] }) {
           <ChartContainer config={{ value: { label: "Reports" } }} className="mx-auto h-64 w-full">
             <PieChart>
               <ChartTooltip content={<ChartTooltipContent nameKey="name" hideLabel />} />
-              <Pie data={summary.total ? split : [{ name: "No reports", value: 1 }]} dataKey="value" nameKey="name" innerRadius={55} outerRadius={90} paddingAngle={2}>
+              <Pie data={summary.total ? split : [{ name: "No reports", value: 1 }]} dataKey="value" nameKey="name" innerRadius={55} outerRadius={90} paddingAngle={summary.total ? 2 : 0}>
                 {(summary.total ? split : [{ name: "No reports" }]).map((d, i) => (
                   <Cell key={d.name} fill={summary.total ? PIE_COLORS[i] : "var(--muted)"} />
                 ))}
