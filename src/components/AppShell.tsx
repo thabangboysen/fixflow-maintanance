@@ -10,7 +10,9 @@ export function AppShell({
   personName,
   roleLabel,
   children,
+  footer,
 }: {
+  footer?: ReactNode;
   title: string;
   subtitle?: string | undefined;
   personName?: string | undefined;
@@ -47,6 +49,7 @@ export function AppShell({
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">{children}</main>
+      {footer}
     </div>
   );
 }
