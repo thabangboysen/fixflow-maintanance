@@ -22,6 +22,14 @@ import { importResidenceStudents } from "@/lib/student.functions";
 import { useProfile } from "@/hooks/useAuth";
 import type { Database } from "@/integrations/supabase/types";
 import { PROBLEM_CATEGORY_VALUES } from "@/lib/categories";
+import { AdminFooter } from "@/components/AdminFooter";
+import {
+  AdminCharts,
+  AdminStatCards,
+  AllReportsPanel,
+  AssignmentsPanel,
+  useAdminReports,
+} from "@/components/admin/AdminReports";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 type Category = Database["public"]["Enums"]["problem_category"];
@@ -116,32 +124,53 @@ function AdminPage() {
     }
   };
 
+  const reportsQuery = useAdminReports();
   const students = studentsQuery.data ?? [];
   const team = teamQuery.data ?? [];
+  const reports = reportsQuery.data ?? [];
 
   return (
     <AppShell
       title="Administration"
-      subtitle="Manage students, the maintenance team and residence data."
+      subtitle="Platform statistics, every maintenance report, assignments and residence data."
       personName={profile?.full_name}
       roleLabel="Administrator"
+      footer={<AdminFooter />}
     >
-      <div className="mb-6 grid gap-4 sm:grid-cols-3">
-        <Stat label="Registered students" value={students.length} icon={<Users className="h-4 w-4" />} />
-        <Stat label="Team members" value={team.length} icon={<UserPlus className="h-4 w-4" />} />
-        <Stat
-          label="Blocks"
-          value={(blocksQuery.data ?? []).length}
-          icon={<Building2 className="h-4 w-4" />}
+      <div className="mb-6">
+        <AdminStatCards
+          students={students.length}
+          reports={reports}
+          loading={studentsQuery.isLoading || reportsQuery.isLoading}
         />
       </div>
 
-      <Tabs defaultValue="students">
-        <TabsList className="flex w-full flex-wrap">
+      <Tabs defaultValue="overview">
+        <TabsList className="flex h-auto w-full flex-wrap">
+          <TabsTrigger value="overview">Statistics</TabsTrigger>
+          <TabsTrigger value="reports">All reports</TabsTrigger>
+          <TabsTrigger value="assignments">Assignments</TabsTrigger>
           <TabsTrigger value="students">Students</TabsTrigger>
           <TabsTrigger value="team">Workers &amp; managers</TabsTrigger>
           <TabsTrigger value="residence">Residence</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="overview" className="mt-4 space-y-6">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Stat label="Team members" value={team.length} icon={<UserPlus className="h-4 w-4" />} />
+            <Stat label="Blocks" value={(blocksQuery.data ?? []).length} icon={<Building2 className="h-4 w-4" />} />
+            <Stat label="Rooms" value={(roomsQuery.data ?? []).length} icon={<Users className="h-4 w-4" />} />
+          </div>
+          <AdminCharts reports={reports} />
+        </TabsContent>
+
+        <TabsContent value="reports" className="mt-4">
+          <AllReportsPanel reports={reports} loading={reportsQuery.isLoading} />
+        </TabsContent>
+
+        <TabsContent value="assignments" className="mt-4">
+          <AssignmentsPanel reports={reports} loading={reportsQuery.isLoading} />
+        </TabsContent>
 
         <TabsContent value="students" className="mt-4 space-y-4">
           <CsvImportCard onChanged={invalidate} />
