@@ -328,6 +328,7 @@
   --card-foreground: oklch(0.22 0.05 262);
   --muted-foreground: oklch(0.45 0.04 258);
   --border: oklch(0.9 0.015 250);
+  --muted: oklch(0.95 0.01 250);
   --primary: oklch(0.46 0.17 258);
   background: var(--card);
   color: var(--card-foreground);

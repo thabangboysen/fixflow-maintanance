@@ -402,7 +402,7 @@ function Clock() {
   }, []);
   if (!now) return null;
   return (
-    <span className="whitespace-nowrap text-xs sm:text-sm">
+    <span className="hidden whitespace-nowrap text-sm sm:inline">
       {now.toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short", year: "numeric" })}
       <span className="mx-2 opacity-40">|</span>
       {now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
@@ -464,7 +464,7 @@ function priorityPill(p: Priority) {
     Medium: "bg-warning text-warning-foreground",
     Low: "bg-secondary text-secondary-foreground",
   };
-  return cn("inline-flex items-center rounded-md px-2.5 py-0.5 text-xs font-semibold", tone[p]);
+  return cn("inline-flex items-center whitespace-nowrap rounded-md px-2.5 py-0.5 text-xs font-semibold", tone[p]);
 }
 
 function statusPill(s: Status) {
@@ -476,7 +476,7 @@ function statusPill(s: Status) {
     Completed: "bg-success text-success-foreground",
     Closed: "bg-muted text-muted-foreground",
   };
-  return cn("inline-flex items-center rounded-md px-2.5 py-0.5 text-xs font-semibold", tone[s]);
+  return cn("inline-flex items-center whitespace-nowrap rounded-md px-2.5 py-0.5 text-xs font-semibold", tone[s]);
 }
 
 function useReportPhoto(path: string | null) {
