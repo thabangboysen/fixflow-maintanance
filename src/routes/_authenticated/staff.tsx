@@ -277,7 +277,7 @@ function StaffPage() {
           ))}
         </div>
 
-        <main className="flex-1 space-y-5 px-4 py-5 sm:px-6" ref={undefined}>
+        <main className="flex-1 space-y-5 px-4 py-5 sm:px-6">
           <div ref={topRef} className="flex scroll-mt-4 items-center gap-4">
             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-warning text-warning-foreground">
               <HardHat className="h-6 w-6" />
