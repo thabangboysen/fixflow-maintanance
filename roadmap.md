@@ -6,3 +6,4 @@
 - [ ] Re-upload old report photos — waiting on files (optional)
 - [x] Replace staff code sign-in with email/password and a secure password setup/reset flow
 - [x] Admin dashboard: student/report totals, statistics charts, all reports, assignments with history, footer
+- [x] Maintenance worker workspace redesign (side menu, number cards, work order card, actions, work orders table)

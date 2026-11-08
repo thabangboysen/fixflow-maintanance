@@ -288,3 +288,48 @@
     mask-image: linear-gradient(to bottom, #000 70%, transparent 100%);
   }
 }
+
+/* Maintenance worker workspace (dark control-room look). */
+.worker-workspace {
+  --background: oklch(0.16 0.035 262);
+  --foreground: oklch(0.97 0.005 250);
+  --card: oklch(0.21 0.04 262);
+  --card-foreground: oklch(0.97 0.005 250);
+  --muted: oklch(0.26 0.04 262);
+  --muted-foreground: oklch(0.72 0.03 255);
+  --primary: oklch(0.58 0.19 258);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.3 0.04 262);
+  --secondary-foreground: oklch(0.95 0.01 250);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 16%);
+  --ring: oklch(0.58 0.19 258);
+  --success: oklch(0.64 0.17 150);
+  --success-foreground: oklch(0.99 0 0);
+  --warning: oklch(0.74 0.17 60);
+  --warning-foreground: oklch(0.99 0 0);
+  --destructive: oklch(0.6 0.22 25);
+  --destructive-foreground: oklch(0.99 0 0);
+  --worker-purple: oklch(0.58 0.2 295);
+  --worker-sidebar: oklch(0.13 0.03 262);
+  --worker-band: linear-gradient(90deg, oklch(0.42 0.17 258), oklch(0.32 0.13 262));
+  --worker-row-active: oklch(0.58 0.19 258 / 18%);
+  min-height: 100svh;
+  background: var(--background);
+  color: var(--foreground);
+}
+.worker-sidebar { background: var(--worker-sidebar); }
+.worker-band { background: var(--worker-band); }
+.worker-purple { background: var(--worker-purple); }
+.worker-row-active { background: var(--worker-row-active); }
+/* The work order sheet is light, like a printed job card. */
+.worker-paper {
+  --card: oklch(0.99 0.003 250);
+  --card-foreground: oklch(0.22 0.05 262);
+  --muted-foreground: oklch(0.45 0.04 258);
+  --border: oklch(0.9 0.015 250);
+  --muted: oklch(0.95 0.01 250);
+  --primary: oklch(0.46 0.17 258);
+  background: var(--card);
+  color: var(--card-foreground);
+}
