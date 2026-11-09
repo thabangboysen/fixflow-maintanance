@@ -367,7 +367,7 @@ function MiniStat({ label, value }: { label: string; value: number }) {
 
 /* ---------------- Report detail + history ---------------- */
 
-function ReportDetailDialog({ report, onClose }: { report: AdminReport | null; onClose: () => void }) {
+export function ReportDetailDialog({ report, onClose }: { report: AdminReport | null; onClose: () => void }) {
   const history = useQuery({
     queryKey: ["admin-report-history", report?.id],
     enabled: !!report,

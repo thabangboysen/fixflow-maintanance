@@ -333,3 +333,7 @@
   background: var(--card);
   color: var(--card-foreground);
 }
+/* Management dashboard welcome banner: solid on the left so the greeting stays readable, photo shows on the right. */
+.mgmt-banner-shade {
+  background: linear-gradient(90deg, var(--background) 22%, oklch(0.16 0.035 262 / 75%) 52%, oklch(0.16 0.035 262 / 25%));
+}
