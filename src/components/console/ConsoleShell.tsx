@@ -82,7 +82,7 @@ function SidebarBody({
         <div className="flex items-center gap-3">
           <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-semibold text-white">
             {initials(user.name)}
-            <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-[var(--console-sidebar)] bg-[var(--primary)]" aria-hidden="true" />
+            <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-sidebar bg-primary" aria-hidden="true" />
           </span>
           <div className="min-w-0">
             <p className="truncate text-sm font-medium text-white">{user.name}</p>
@@ -203,7 +203,7 @@ export function ConsoleShell({
                   className="flex items-center gap-2 rounded-md py-1 pl-1 pr-2 transition-colors hover:bg-muted"
                   aria-label="Account menu"
                 >
-                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--brand-soft)] text-xs font-semibold text-[var(--brand-strong)]">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-soft text-xs font-semibold text-brand-strong">
                     {initials(user.name)}
                   </span>
                   <span className="hidden text-left md:block">
@@ -217,7 +217,7 @@ export function ConsoleShell({
                 <DropdownMenuLabel className="font-normal">
                   <p className="truncate text-sm font-medium">{user.name}</p>
                   {user.email && <p className="truncate text-xs text-muted-foreground">{user.email}</p>}
-                  <p className="mt-1 text-xs text-[var(--brand-strong)]">{user.role}</p>
+                  <p className="mt-1 text-xs text-brand-strong">{user.role}</p>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onSelect={onSignOut}>
