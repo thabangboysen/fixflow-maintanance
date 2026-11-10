@@ -32,6 +32,8 @@
   --color-success-foreground: var(--success-foreground);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
+  --color-brand-strong: var(--brand-strong);
+  --color-brand-soft: var(--brand-soft);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -92,6 +94,8 @@
   --sidebar-border: oklch(0.38 0.08 259);
   --sidebar-ring: oklch(0.7 0.13 178);
   --footer-midnight: #121d2d;
+  --brand-strong: oklch(0.32 0.1 259);
+  --brand-soft: oklch(0.94 0.02 250);
 }
 
 .bg-footer-midnight {
@@ -333,6 +337,121 @@
   background: var(--card);
   color: var(--card-foreground);
 }
+/* ============ Enterprise console (admin first; management and staff to follow) ============ */
+/* Theme variables only — safe to put on portalled dialogs, menus and sheets too. */
+.console-theme {
+  --radius: 0.5rem;
+  --background: #f4f6f5;
+  --foreground: #101820;
+  --card: #ffffff;
+  --card-foreground: #101820;
+  --popover: #ffffff;
+  --popover-foreground: #101820;
+  --primary: #15966a;
+  --primary-foreground: #ffffff;
+  --secondary: #eef1ef;
+  --secondary-foreground: #1c242b;
+  --muted: #eef1ef;
+  --muted-foreground: #5b6670;
+  --accent: #e8f5ef;
+  --accent-foreground: #08764f;
+  --destructive: #c0392b;
+  --destructive-foreground: #ffffff;
+  --success: #15966a;
+  --success-foreground: #ffffff;
+  --warning: #c77a12;
+  --warning-foreground: #ffffff;
+  --border: #e5e9e7;
+  --input: #d9dfdc;
+  --ring: #15966a;
+  --chart-1: #15966a;
+  --chart-2: #29343d;
+  --chart-3: #9aa5ae;
+  --chart-4: #c77a12;
+  --chart-5: #c0392b;
+  --brand-strong: #08764f;
+  --brand-soft: #e8f5ef;
+  --console-sidebar: #101820;
+  --console-sidebar-hover: #1c242b;
+  --console-sidebar-line: #29343d;
+  --console-sidebar-text: rgb(255 255 255 / 70%);
+  --console-shadow: 0 1px 2px rgb(16 24 32 / 4%), 0 1px 3px rgb(16 24 32 / 6%);
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: "cv11", "ss01";
+  letter-spacing: -0.005em;
+}
+.console-theme h1,
+.console-theme h2,
+.console-theme h3,
+.console-theme .font-display {
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -0.015em;
+}
+.console {
+  min-height: 100svh;
+  background: var(--background);
+  color: var(--foreground);
+}
+.console-card {
+  background: var(--card);
+  color: var(--card-foreground);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--console-shadow);
+}
+.console-sidebar {
+  background: var(--console-sidebar);
+  color: #ffffff;
+  --primary-foreground: #ffffff;
+}
+.console-sidebar-line { border-color: var(--console-sidebar-line); }
+.console-sidebar-muted { color: var(--console-sidebar-text); }
+.console-nav-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  height: 40px;
+  padding: 0 0.75rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: var(--console-sidebar-text);
+  transition: background-color 150ms ease, color 150ms ease;
+}
+.console-nav-item:hover { background: var(--console-sidebar-hover); color: #ffffff; }
+.console-nav-item:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+.console-nav-item[data-active="true"] {
+  background: rgb(21 150 106 / 14%);
+  color: #ffffff;
+  font-weight: 500;
+}
+.console-nav-item[data-active="true"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 9px;
+  bottom: 9px;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background: var(--primary);
+}
+.console-nav-item[data-active="true"] svg { color: #3ccf95; }
+/* Status tones for badges: tinted background, strong text, hairline border. */
+.tone-success { background: #e8f5ef; color: #08764f; border-color: #c9e9da; }
+.tone-warning { background: #fdf3e4; color: #8f5208; border-color: #f3dcb6; }
+.tone-danger { background: #fbeceb; color: #9b2c22; border-color: #f1cdc9; }
+.tone-info { background: #eaf1f9; color: #1f4e80; border-color: #cddcee; }
+.tone-neutral { background: #eef1ef; color: #3c4750; border-color: #dde2df; }
+.tone-dot { background: currentColor; }
+@keyframes console-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.console-enter { animation: console-in 220ms ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  .console-enter { animation: none; }
+}
+
 /* Management dashboard welcome banner: solid on the left so the greeting stays readable, photo shows on the right. */
 .mgmt-banner-shade {
   background: linear-gradient(90deg, var(--background) 22%, oklch(0.16 0.035 262 / 75%) 52%, oklch(0.16 0.035 262 / 25%));
